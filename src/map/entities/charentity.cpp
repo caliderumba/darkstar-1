@@ -147,6 +147,7 @@ CCharEntity::CCharEntity()
 	petZoningInfo.petID = 0;
 	petZoningInfo.petType = PETTYPE_AVATAR;			// dummy data, the bool tells us to respawn if required
 	petZoningInfo.petHP = 0;
+    petZoningInfo.petMP = 0;
 	petZoningInfo.petTP = 0;
 
 	m_PlayTime = 0;
@@ -347,10 +348,6 @@ bool CCharEntity::getStyleLocked()
 
 void CCharEntity::setStyleLocked(bool isStyleLocked)
 {
-  if (isStyleLocked) {
-	memcpy(&mainlook, &look, sizeof(look));
-  }
-
   m_isStyleLocked = isStyleLocked;
 }
 

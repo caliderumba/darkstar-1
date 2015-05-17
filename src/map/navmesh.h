@@ -64,7 +64,7 @@ class CNavMesh
     static void ToDetourPos(position_t* out);
 
   public:
-    CNavMesh();
+    CNavMesh(uint16 zoneID);
     ~CNavMesh();
 
     bool load(char* path);
@@ -73,11 +73,11 @@ class CNavMesh
     int16 findPath(position_t start, position_t end, position_t* path, uint16 pathSize);
     int16 findRandomPath(position_t start, float maxRadius, position_t* path, uint16 pathSize);
 
-    // returns true if end point can be seen from start point
-    bool canSeePoint(position_t start, position_t end);
-
     // returns true if the point is in water
     bool inWater(position_t point);
+
+    // returns true if no wall was hit
+    bool raycast(position_t start, position_t end);
 
     // validate the integrity of the navmesh
     bool test(uint16 zoneId);
@@ -85,6 +85,9 @@ class CNavMesh
   private:
     void outputError(uint32 status);
 
+    uint16 m_zoneID;
+    dtRaycastHit m_hit;
+    dtPolyRef m_hitPath[20];
     dtNavMesh* m_navMesh;
     dtNavMeshQuery* m_navMeshQuery;
     char* path;

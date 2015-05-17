@@ -518,13 +518,17 @@ void CStatusEffectContainer::KillAllStatusEffect()
 	{
 		CStatusEffect* PStatusEffect = m_StatusEffectList.at(i);
 
-		luautils::OnEffectLose(m_POwner, PStatusEffect);
+        if (PStatusEffect->GetDuration() != 0)
+        {
 
-		m_POwner->delModifiers(&PStatusEffect->modList);
+            luautils::OnEffectLose(m_POwner, PStatusEffect);
 
-		m_StatusEffectList.erase(m_StatusEffectList.begin() + i);
+            m_POwner->delModifiers(&PStatusEffect->modList);
 
-		delete PStatusEffect;
+            m_StatusEffectList.erase(m_StatusEffectList.begin() + i);
+
+            delete PStatusEffect;
+        }
 	}
     m_POwner->UpdateHealth();
 }
@@ -1198,40 +1202,46 @@ void CStatusEffectContainer::LoadStatusEffects()
 *																		*
 ************************************************************************/
 
-void CStatusEffectContainer::SaveStatusEffects()
+void CStatusEffectContainer::SaveStatusEffects(bool logout)
 {
     DSP_DEBUG_BREAK_IF(m_POwner->objtype != TYPE_PC);
 
 	Sql_Query(SqlHandle,"DELETE FROM char_effects WHERE charid = %u", m_POwner->id);
 
-	for (uint32 i = 0; i < m_StatusEffectList.size(); ++i)
-	{
+    for (uint16 i = 0; i < m_StatusEffectList.size(); ++i)
+    {
         CStatusEffect* PStatusEffect = m_StatusEffectList.at(i);
-        if (PStatusEffect->GetDuration() != 0)
-        {
-            const int8* Query = "INSERT INTO char_effects (charid, effectid, icon, power, tick, duration, subid, subpower, tier) VALUES(%u,%u,%u,%u,%u,%u,%u,%u,%u);";
 
-            // save power of utsusemi and blink
-            if(PStatusEffect->GetStatusID() == EFFECT_COPY_IMAGE){
-                PStatusEffect->SetPower(m_POwner->getMod(MOD_UTSUSEMI));
-            } else if(PStatusEffect->GetStatusID() == EFFECT_BLINK){
-                PStatusEffect->SetPower(m_POwner->getMod(MOD_BLINK));
-            } else if(PStatusEffect->GetStatusID() == EFFECT_STONESKIN){
-                PStatusEffect->SetPower(m_POwner->getMod(MOD_STONESKIN));
-            }
+        if (logout && PStatusEffect->GetFlag() & EFFECTFLAG_LOGOUT)
+            continue;
 
-			Sql_Query(SqlHandle, Query,
-				m_POwner->id,
-				PStatusEffect->GetStatusID(),
-                PStatusEffect->GetIcon(),
-				PStatusEffect->GetPower(),
-				PStatusEffect->GetTickTime() / 1000,
-			   (PStatusEffect->GetDuration() + PStatusEffect->GetStartTime() - gettick()) / 1000,
-				PStatusEffect->GetSubID(),
-                PStatusEffect->GetSubPower(),
-                PStatusEffect->GetTier());
-		}
-	}
+        const int8* Query = "INSERT INTO char_effects (charid, effectid, icon, power, tick, duration, subid, subpower, tier) VALUES(%u,%u,%u,%u,%u,%u,%u,%u,%u);";
+
+        // save power of utsusemi and blink
+        if (PStatusEffect->GetStatusID() == EFFECT_COPY_IMAGE){
+            PStatusEffect->SetPower(m_POwner->getMod(MOD_UTSUSEMI));
+        }
+        else if (PStatusEffect->GetStatusID() == EFFECT_BLINK){
+            PStatusEffect->SetPower(m_POwner->getMod(MOD_BLINK));
+        }
+        else if (PStatusEffect->GetStatusID() == EFFECT_STONESKIN){
+            PStatusEffect->SetPower(m_POwner->getMod(MOD_STONESKIN));
+        }
+
+        uint32 duration = PStatusEffect->GetDuration() == 0 ? 0 : (PStatusEffect->GetDuration() + PStatusEffect->GetStartTime() - gettick()) / 1000;
+        uint32 tick = PStatusEffect->GetTickTime() == 0 ? 0 : PStatusEffect->GetTickTime() / 100;
+
+        Sql_Query(SqlHandle, Query,
+            m_POwner->id,
+            PStatusEffect->GetStatusID(),
+            PStatusEffect->GetIcon(),
+            PStatusEffect->GetPower(),
+            tick,
+            duration,
+            PStatusEffect->GetSubID(),
+            PStatusEffect->GetSubPower(),
+            PStatusEffect->GetTier());
+    }
 }
 
 /************************************************************************
@@ -1394,6 +1404,18 @@ bool CStatusEffectContainer::HasPreventActionEffect()
         HasStatusEffect(EFFECT_PENALTY) ||
         HasStatusEffect(EFFECT_STUN) ||
 		HasStatusEffect(EFFECT_TERROR);
+}
+
+uint16 CStatusEffectContainer::GetConfrontationEffect()
+{
+    for (auto PEffect : m_StatusEffectList)
+    {
+        if (PEffect->GetFlag() & EFFECTFLAG_CONFRONTATION)
+        {
+            return PEffect->GetPower();
+        }
+    }
+    return 0;
 }
 
 bool CStatusEffectContainer::CheckForElevenRoll()

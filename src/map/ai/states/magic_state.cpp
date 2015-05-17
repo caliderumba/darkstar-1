@@ -88,12 +88,12 @@ bool CMagicState::CanCastSpell(CSpell* PSpell, CBattleEntity* PTarget, uint8 fla
         // pc has special messages
         if(distanceValue > 25)
         {
-            PushError(MSGBASIC_TOO_FAR_AWAY, PSpell->getID());
+            PushError(MSGBASIC_TOO_FAR_AWAY, PSpell->getID(), 0, PTarget);
             return false;
         }
         else if(distanceValue > m_maxStartDistance)
         {
-            PushError(MSGBASIC_OUT_OF_RANGE_UNABLE_CAST, PSpell->getID());
+            PushError(MSGBASIC_OUT_OF_RANGE_UNABLE_CAST, PSpell->getID(), 0, PTarget);
             return false;
         }
     }
@@ -110,7 +110,7 @@ bool CMagicState::CanCastSpell(CSpell* PSpell, CBattleEntity* PTarget, uint8 fla
 
     int32 msgID = luautils::OnMagicCastingCheck(m_PEntity, PTarget, PSpell);
 	if(msgID){
-        PushError((MSGBASIC_ID)msgID, PSpell->getID());
+        PushError((MSGBASIC_ID)msgID, PSpell->getID(), 0, PTarget);
 		return false;
 	}
 
@@ -478,7 +478,11 @@ bool CMagicState::CheckInterrupt()
 
 bool CMagicState::ValidCast(CSpell* PSpell, CBattleEntity* PTarget)
 {
-    if(!CheckValidTarget(PTarget)) return false;
+    if (!CheckValidTarget(PTarget))
+    {
+        PushError(MSGBASIC_CANNOT_ON_THAT_TARG, 0);
+        return false;
+    }
 
 	if(!m_enableCasting ||
 		m_PEntity->StatusEffectContainer->HasStatusEffect(EFFECT_SILENCE) ||
@@ -504,6 +508,12 @@ bool CMagicState::ValidCast(CSpell* PSpell, CBattleEntity* PTarget)
             ShowWarning("CMagicState::ValidCast Mob (%u) tried to cast magic with no mp!\n", m_PEntity->id);
         }
         PushError(MSGBASIC_NOT_ENOUGH_MP, PSpell->getID());
+        return false;
+    }
+
+    if (!spell::CanUseSpell(m_PEntity, PSpell->getID()))
+    {
+        PushError(MSGBASIC_CANNOT_CAST_SPELL, PSpell->getID());
         return false;
     }
 
