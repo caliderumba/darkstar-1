@@ -33,7 +33,7 @@ RESTRICT_BY_EXPANSION = 0;
 
 -- CHARACTER CONFIG
 INITIAL_LEVEL_CAP = 50; -- The initial level cap for new players.  There seems to be a hardcap of 255.
-MAX_LEVEL = 75; -- Level max of the server, lowers the attainable cap by disabling Limit Break quests.
+MAX_LEVEL = 99; -- Level max of the server, lowers the attainable cap by disabling Limit Break quests.
 NORMAL_MOB_MAX_LEVEL_RANGE_MIN = 81; -- Lower Bound of Max Level Range for Normal Mobs (0 = Uncapped)
 NORMAL_MOB_MAX_LEVEL_RANGE_MAX = 84; -- Upper Bound of Max Level Range for Normal Mobs (0 = Uncapped)
 START_GIL = 1000000; --Amount of gil given to newly created characters.
